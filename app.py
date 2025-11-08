@@ -8,7 +8,6 @@ from dedalus_labs import AsyncDedalus, DedalusRunner
 # --- SETUP ---
 # Get the API key from the server's environment variable
 # We will set this in the Firebase website
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +16,7 @@ CORS(app)
 # --- DEDALUS HELPER 1: GET TIP ---
 async def run_dedalus_tip(interest_topic: str, difficulty_level: str):
     # Pass the key to the client
-    client = AsyncDedalus(openai_api_key=OPENAI_API_KEY)
+    client = AsyncDedalus()
     runner = DedalusRunner(client)
     prompt_input = f"""
     A user wants 5 short, single-sentence tips for '{interest_topic}'
@@ -43,7 +42,7 @@ async def run_dedalus_tip(interest_topic: str, difficulty_level: str):
 # --- DEDALUS HELPER 2: GET ROUTINE ---
 async def run_dedalus_routine(interest_topic: str):
     # Pass the key to the client
-    client = AsyncDedalus(openai_api_key=OPENAI_API_KEY)
+    client = AsyncDedalus()
     runner = DedalusRunner(client)
     prompt_input = f"""
     A user wants to get 1% better at '{interest_topic}'. 
