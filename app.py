@@ -30,7 +30,7 @@ async def run_dedalus_tip(interest_topic: str, difficulty_level: str):
     print(f"Flask Server: Sending request for 5 tips on '{interest_topic}'...")
     try:
         result = await runner.run(
-            input=prompt_input, model="openai/gpt-5-mini",
+            # input=prompt_input, model="openai/gpt-5-mini",
             mcp_servers=["therickmj03/MCPserver_HACKPRINCENTON"], stream=False
         )
         print("Flask Server: Received tips response from Dedalus.")
@@ -42,13 +42,13 @@ async def run_dedalus_tip(interest_topic: str, difficulty_level: str):
 
 async def run_dedalus_routine(interest_topic: str):
     """
-    Runs the Dedalus agent to generate a simple 21-day routine.
+    Runs the Dedalus agent to generate a simple 7-day routine.
     """
     client = AsyncDedalus()
     runner = DedalusRunner(client)
     prompt_input = f"""
     A user wants to get 1% better at '{interest_topic}'. 
-    Please generate a 21-day routine for them.
+    Please generate a 7-day routine for them.
     Start with an introduction.
     For each day, start with a clear marker like 'Day 1 — [Title of the day]'.
     """
@@ -68,22 +68,23 @@ async def run_dedalus_routine(interest_topic: str):
 # --- DEDALUS HELPER 3: CREATE PERSONALIZED PLAN (ADVANCED) ---
 async def run_dedalus_personalized_plan(user_data: dict):
     """
-    Runs the Dedalus agent to GENERATE a hyper-personalized plan
-    with 3 tasks per period, including specific times.
+    Generate a 7-day plan with clean sections and no stray bracket lines.
     """
     client = AsyncDedalus()
     runner = DedalusRunner(client)
 
+    wake_time = user_data.get('wakeUpTime', '8:00 AM')
+    sleep_time = user_data.get('sleepTime', '7:00 PM')
+
     prompt_input = f"""
-    You are an elite performance coach. A user has provided their personal data. 
-    Your task is to create a hyper-personalized 21-day "1% better" plan to help 
-    them improve their life, built around their specific schedule and habits.
+    You are an elite performance coach. A user has provided their personal data.
+    Create a 7-day "1% better" plan that is SHORT, ACTIONABLE, and fits inside their day.
 
     USER DATA:
     - Name: {user_data.get('name', 'N/A')}
     - Age: {user_data.get('age', 'N/A')}
-    - Wakes Up: {user_data.get('wakeUpTime', 'N/A')}
-    - Sleeps: {user_data.get('sleepTime', 'N/A')}
+    - Wakes Up: {wake_time}
+    - Sleeps: {sleep_time}
     - Eating Habits: {user_data.get('eatingHabits', 'N/A')}
     - Exercise: {user_data.get('exerciseRoutine', 'N/A')}
     - Focus Ability: {user_data.get('deepFocus', 'N/A')}
@@ -91,56 +92,181 @@ async def run_dedalus_personalized_plan(user_data: dict):
     - Notification Style: {user_data.get('notificationStyle', 'N/A')}
 
     TASK:
-    1.  Write a brief, motivating introduction.
-    2.  Generate a 21-day plan. For each day, create three distinct, actionable
-        tasks for "Morning", "Afternoon", and "Evening".
-    3.  ***CRITICAL***: Each task MUST start with a specific time 
-        (e.g., "9:00 AM: ...", "3:30 PM: ...") that is personalized 
-        to their sleep/wake schedule.
-    4.  After the 21-day plan, provide a list of 5-7 "Personalized Tips"
-        based on their specific data.
+    1. Start with a brief, motivating introduction addressed to the user by name.
+    2. Then generate EXACTLY 7 days.
+    3. For EACH day, create three sections: Morning, Afternoon, Evening.
+    4. For EACH section, write EXACTLY 3 bullet tasks.
+    5. EVERY task MUST start with a specific time inside their day
+       (morning between {wake_time} and 11:30 AM;
+        afternoon between 12:00 PM and 5:00 PM;
+        evening between 5:00 PM and {sleep_time}).
+    6. Keep each task concise (1–2 sentences) but useful (what + how).
+    7. After Day 7, add "Personalized Tips:" and list 5–8 bullets tailored to their data.
+    8. Do NOT include square brackets [], do NOT wrap tasks in parentheses.
 
-    REQUIRED FORMAT:
-    (Introduction text...)
+    REQUIRED FORMAT (copy this structure, no extra characters):
+
+    (Short introduction, 2–4 sentences...)
 
     Day 1:
     Morning:
-    - 9:00 AM: (Task 1...)
-    - 10:30 AM: (Task 2...)
-    - 11:45 AM: (Task 3...)
+    - 8:15 AM: Drink 300 ml water and eat a quick protein snack to stabilize energy.
+    - 9:30 AM: Write your top 3 priorities for today and place them somewhere visible.
+    - 11:00 AM: Do a 5-minute mobility routine for hips and shoulders.
     Afternoon:
-    - 1:30 PM: (Task 1...)
-    - 3:00 PM: (Task 2...)
-    - 4:30 PM: (Task 3...)
+    - 12:30 PM: Eat a balanced lunch (protein, vegetables, carbs) away from screens.
+    - 3:00 PM: Do a 25–50 minute focused work block on your top priority.
+    - 4:30 PM: Take a 10-minute walk or light mobility to reset.
     Evening:
-    - 7:00 PM: (Task 1...)
-    - 9:30 PM: (Task 2...)
-    - 12:30 AM: (Task 3...)
+    - 5:15 PM: Prepare or assemble a simple dinner (protein + veg).
+    - 6:00 PM: Write one sentence about what went well and one fix for tomorrow.
+    - 6:40 PM: Power down screens and dim lights to start your sleep routine.
 
     Day 2:
-    (Repeat the same structure...)
+    (same structure as Day 1)
 
-    (...and so on for 21 days...)
+    ...
+    Day 7:
+    (same structure)
 
     Personalized Tips:
-    - (Tip 1...)
-    - (Tip 2...)
-    - (Tip 3...)
+    - tip 1
+    - tip 2
+    - tip 3
     """
-    
-    print(f"Flask Server: Sending request to Dedalus for personalized plan for {user_data.get('name')}...")
-    
+
     try:
         result = await runner.run(
             input=prompt_input,
             model="openai/gpt-5-mini",
             stream=False
         )
-        print("Flask Server: Received personalized plan from Dedalus.")
         return result.final_output
     except Exception as e:
         print(f"Flask Server: Error calling Dedalus for personalized plan: {e}")
         return "Sorry, I was unable to generate a personalized plan at this time."
+
+
+
+# async def run_dedalus_personalized_plan_chunk(user_data: dict, start_day: int, num_days: int):
+#     """
+#     Ask Dedalus for a partial plan, e.g. days 8–14, with the SAME structure
+#     as the main 7-day generator: 3 tasks per Morning/Afternoon/Evening, with times.
+#     """
+#     client = AsyncDedalus()
+#     runner = DedalusRunner(client)
+
+#     prev_days_str = user_data.get("_already_generated_days", "")
+
+#     prompt_input = f"""
+#     You are an elite performance coach. A user has provided their personal data.
+#     You will generate ONLY a slice of their plan.
+
+#     USER DATA:
+#     - Name: {user_data.get('name', 'N/A')}
+#     - Age: {user_data.get('age', 'N/A')}
+#     - Wakes Up: {user_data.get('wakeUpTime', 'N/A')}
+#     - Sleeps: {user_data.get('sleepTime', 'N/A')}
+#     - Eating Habits: {user_data.get('eatingHabits', 'N/A')}
+#     - Exercise: {user_data.get('exerciseRoutine', 'N/A')}
+#     - Focus Ability: {user_data.get('deepFocus', 'N/A')}
+#     - Time Management: {user_data.get('timeManagement', 'N/A')}
+#     - Notification Style: {user_data.get('notificationStyle', 'N/A')}
+
+#     The user already has a plan for: {prev_days_str if prev_days_str else "none yet"}.
+#     Do NOT regenerate any of those days.
+
+#     TASK:
+#     1. Generate ONLY days {start_day} through {start_day + num_days - 1}.
+#     2. For EACH day, create three distinct, actionable tasks for Morning, Afternoon, and Evening.
+#     3. ***CRITICAL***: Each task MUST start with a specific time personalized to their wake/sleep.
+#        Use realistic times between {user_data.get('wakeUpTime', '8:00 AM')} and {user_data.get('sleepTime', '9:30 PM')}.
+#     4. Keep it concise BUT fully informative — 2–3 short sentences per task is okay.
+#     5. Do NOT add "Personalized Tips" here. Only the days.
+
+#     REQUIRED FORMAT (copy this style):
+
+#     Day {start_day}:
+#     Morning:
+#     - 8:00 AM: ...
+#     - 9:30 AM: ...
+#     - 11:00 AM: ...
+#     Afternoon:
+#     - 1:00 PM: ...
+#     - 3:00 PM: ...
+#     - 4:30 PM: ...
+#     Evening:
+#     - 6:30 PM: ...
+#     - 7:30 PM: ...
+#     - 8:30 PM: ...
+
+#     Day {start_day + 1}:
+#     (same structure)
+
+#     Stop after Day {start_day + num_days - 1}.
+#     """
+
+#     try:
+#         result = await runner.run(
+#             input=prompt_input,
+#             model="openai/gpt-5-mini",
+#             stream=False
+#         )
+#         return result.final_output
+#     except Exception as e:
+#         print(f"Flask Server: Error calling Dedalus for chunk {start_day}-{start_day+num_days-1}: {e}")
+#         return ""
+
+
+# async def build_full_plan(user_data: dict, total_days: int = 21, chunk_size: int = 7):
+#     """
+#     Generate a multi-chunk plan: 1–7, 8–14, 15–21 ...
+#     Returns a single dict: {"intro": "...", "days": [...], "tips": [...]}
+#     """
+#     all_days = []
+#     intro_text = ""
+#     all_tips = []
+
+#     # we'll track which days we've made, to tell the model next time
+#     already_generated_labels = []
+
+#     for start in range(1, total_days + 1, chunk_size):
+#         # how many days in this chunk?
+#         this_chunk = min(chunk_size, total_days - start + 1)
+
+#         # update user_data with what we already made, so it can go in the prompt
+#         user_data["_already_generated_days"] = ", ".join(already_generated_labels)
+
+#         raw_chunk = await run_dedalus_personalized_plan_chunk(user_data, start, this_chunk)
+#         parsed_chunk = parse_personalized_plan(raw_chunk)  # reuse your existing parser
+
+#         # first chunk can carry the intro, others usually won't
+#         if start == 1 and parsed_chunk.get("intro"):
+#             intro_text = parsed_chunk["intro"]
+
+#         # merge days
+#         for day_obj in parsed_chunk.get("days", []):
+#             all_days.append(day_obj)
+#             # remember that we now have "Day X"
+#             already_generated_labels.append(f"Day {day_obj['day']}")
+
+#         # collect tips if model emitted them
+#         if parsed_chunk.get("tips"):
+#             all_tips.extend(parsed_chunk["tips"])
+
+#     # dedupe tips a little
+#     seen = set()
+#     unique_tips = []
+#     for t in all_tips:
+#         if t not in seen:
+#             seen.add(t)
+#             unique_tips.append(t)
+
+#     return {
+#         "intro": intro_text,
+#         "days": all_days,
+#         "tips": unique_tips
+#     }
 
 
 def parse_tips(raw_text: str) -> dict:
@@ -161,7 +287,7 @@ def parse_tips(raw_text: str) -> dict:
 
 def parse_routine(raw_text: str) -> dict:
     """
-    Parses the simple 21-day routine.
+    Parses the simple 7-day routine.
     """
     parts = re.split(r'\n(?=Day \d+ —)', raw_text)
     if len(parts) < 2: return {"intro": raw_text, "days": []}
@@ -288,7 +414,94 @@ def create_personalized_plan_endpoint():
         print(f"Flask Server: Error in asyncio for personalized plan: {e}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
+# @app.route('/api/create-personalized-plan-full', methods=['POST'])
+# def create_personalized_plan_full_endpoint():
+#     user_data = request.json
+#     if not user_data:
+#         return jsonify({"error": "Missing user data in request body"}), 400
 
+#     try:
+#         # run the async builder
+#         full_plan = asyncio.run(build_full_plan(user_data, total_days=21, chunk_size=7))
+#         return jsonify(full_plan)
+#     except Exception as e:
+#         print(f"Flask Server: Error building full plan: {e}")
+#         return jsonify({"error": "An internal server error occurred"}), 500
+
+# @app.route('/api/create-personalized-plan-chunk', methods=['POST'])
+# def create_personalized_plan_chunk_endpoint():
+#     """
+#     Body JSON example:
+#     {
+#       "user": { ... },            # whatever user_data you already send
+#       "start_day": 1,
+#       "num_days": 7,
+#       "already_generated": ["Day 1","Day 2","Day 3"]   # optional
+#     }
+#     """
+#     data = request.json
+#     if not data:
+#         return jsonify({"error": "Missing body"}), 400
+
+#     user_data = data.get("user", {})
+#     start_day = int(data.get("start_day", 1))
+#     num_days = int(data.get("num_days", 7))
+
+#     # pass what we already have back into the prompt so it doesn't repeat
+#     already_generated = data.get("already_generated", [])
+#     if already_generated:
+#         user_data["_already_generated_days"] = ", ".join(already_generated)
+
+#     try:
+#         raw_chunk = asyncio.run(
+#             run_dedalus_personalized_plan_chunk(user_data, start_day, num_days)
+#         )
+#         parsed = parse_personalized_plan(raw_chunk)
+#         return jsonify(parsed)
+#     except Exception as e:
+#         print(f"Flask Server: error generating chunk: {e}")
+#         return jsonify({"error": "Internal error"}), 500
+
+# @app.route('/api/create-personalized-plan-week', methods=['POST'])
+# def create_personalized_plan_week_endpoint():
+#     data = request.json
+#     if not data:
+#         return jsonify({"error": "Missing body"}), 400
+
+#     user_data = data.get("user", {})
+#     week_number = int(data.get("week_number", 1))  # 1 = days 1–7, 2 = days 8–14, etc.
+
+#     # figure out start/end days for this week
+#     start_day = (week_number - 1) * 7 + 1
+#     num_days = 7
+
+#     # tell the model what days we *already* had (only for week > 1)
+#     already_generated = []
+#     if week_number > 1:
+#         already_generated = [f"Day {d}" for d in range(1, start_day)]
+#         user_data["_already_generated_days"] = ", ".join(already_generated)
+
+#     try:
+#         raw_chunk = asyncio.run(
+#             run_dedalus_personalized_plan_chunk(user_data, start_day, num_days)
+#         )
+#         parsed = parse_personalized_plan(raw_chunk)
+#         return jsonify(parsed)
+#     except Exception as e:
+#         print(f"Flask Server: error generating week {week_number}: {e}")
+#         return jsonify({"error": "Internal error"}), 500
+
+@app.route('/', methods=['GET'])
+def health():
+    return "API is running", 200
+
+
+# if __name__ == '__main__':
+#     app.run(
+#         host='0.0.0.0',
+#         port=8080,
+#         ssl_context=('cert.pem', 'key.pem')
+#     )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(host='0.0.0.0', port=8080)
