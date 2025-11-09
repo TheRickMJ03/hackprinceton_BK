@@ -80,6 +80,12 @@ async def run_dedalus_personalized_plan(user_data: dict):
     You are an elite performance coach. A user has provided their personal data.
     Create a 7-day "1% better" plan that is SHORT, ACTIONABLE, and fits inside their day.
 
+    Follow the Principles of Atomic Habits:
+    - Make it obvious: Create clear cues for your habits.
+    - Make it attractive: Increase the appeal of your habits.
+    - Make it easy: Simplify the process to encourage action.
+    - Make it satisfying: Ensure that the outcome is rewarding.
+
     USER DATA:
     - Name: {user_data.get('name', 'N/A')}
     - Age: {user_data.get('age', 'N/A')}
